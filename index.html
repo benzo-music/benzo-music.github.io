@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LandHub | РАЗРАБОТКА ЛЕНДИНГОВ</title>
+    <meta name="yandex-verification" content="8114b7a58acb1350">
     <!-- ИКОНКА: L БЕЛАЯ, H КРАСНАЯ НА ЧЁРНОМ -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='black'/><text x='30' y='70' font-family='Arial' font-size='70' fill='white' text-anchor='middle' font-weight='bold'>L</text><text x='70' y='70' font-family='Arial' font-size='70' fill='%23ff2e2e' text-anchor='middle' font-weight='bold'>H</text></svg>">
     <style>
@@ -95,7 +96,7 @@
             cursor: pointer;
         }
         
-        /* ГЛАВНЫЙ ЭКРАН - ИСПРАВЛЕНО ДЛЯ КАРТИНКИ */
+        /* ГЛАВНЫЙ ЭКРАН */
         .hero { 
             padding: 180px 0 150px; 
             text-align: center; 
@@ -105,7 +106,7 @@
                 linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95)),
                 url('https://i.ibb.co/hz9PHy4/33117cb960cc09c2ef1831bcaf823a74.jpg');
             background-size: cover;
-            background-position: center 25%; /* Сдвигаем центр картинки выше чтобы показать верх */
+            background-position: center 25%;
             background-repeat: no-repeat;
             background-color: #000;
             min-height: 100vh;
@@ -205,6 +206,73 @@
             background: var(--red);
         }
         
+        /* ПОРТФОЛИО С ГРАДИЕНТНЫМИ РАМКАМИ */
+        #portfolio {
+            padding: 120px 0;
+            background: #050505;
+        }
+        
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 35px;
+            margin-top: 40px;
+        }
+        
+        .portfolio-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            background: 
+                linear-gradient(#000, #000) padding-box,
+                linear-gradient(135deg, #333, #555, #333) border-box;
+            border: 2px solid transparent;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            padding: 3px;
+        }
+        
+        .portfolio-item:hover {
+            background: 
+                linear-gradient(#000, #000) padding-box,
+                linear-gradient(135deg, #ff2e2e, #ff6b6b, #ff2e2e) border-box;
+            border: 3px solid transparent;
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(255, 46, 46, 0.25);
+        }
+        
+        .portfolio-img-container {
+            width: 100%;
+            height: auto;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        
+        .portfolio-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.5s ease;
+            border-radius: 6px;
+        }
+        
+        .portfolio-item:hover img {
+            transform: scale(1.03);
+        }
+        
+        .portfolio-counter {
+            text-align: center;
+            margin-top: 40px;
+            color: var(--gray);
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+        
+        .portfolio-counter span {
+            color: var(--red);
+            font-weight: 700;
+        }
+        
         /* УСЛУГИ */
         .services-grid { 
             display: grid; 
@@ -255,7 +323,7 @@
             line-height: 1.6;
         }
         
-        /* ПРОЦЕСС - ПОДСВЕТКА ЦИФРАМ */
+        /* ПРОЦЕСС */
         .process-grid { 
             display: grid; 
             grid-template-columns: repeat(4, 1fr); 
@@ -400,7 +468,6 @@
             box-shadow: 0 10px 30px rgba(255,46,46,0.2);
         }
         
-        /* КНОПКА ВК - ЧЁРНАЯ */
         .btn-vk-black {
             display: inline-block;
             padding: 20px 50px;
@@ -486,7 +553,7 @@
         
         /* АДАПТИВ */
         @media (max-width: 1100px) {
-            .services-grid, .process-grid {
+            .services-grid, .process-grid, .portfolio-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
@@ -518,7 +585,7 @@
             .hero { 
                 padding: 160px 0 100px;
                 min-height: 90vh;
-                background-position: center 30%; /* На мобильных сдвигаем еще выше */
+                background-position: center 30%;
             }
             
             .hero h1 { 
@@ -540,7 +607,7 @@
                 margin-bottom: 50px;
             }
             
-            .services-grid, .process-grid, .pricing-grid { 
+            .services-grid, .process-grid, .pricing-grid, .portfolio-grid { 
                 grid-template-columns: 1fr; 
                 gap: 20px;
             }
@@ -616,6 +683,7 @@
                 <button class="mobile-menu-btn">☰</button>
                 <nav id="mainNav">
                     <a href="#services">Услуги</a>
+                    <a href="#portfolio">Портфолио</a>
                     <a href="#process">Процесс</a>
                     <a href="#pricing">Цены</a>
                     <a href="#contact">Начать проект</a>
@@ -654,6 +722,58 @@
                 <div class="service-card fade-in delay-2">
                     <h3>Техническая поддержка</h3>
                     <p>Обновление контента, оптимизация скорости, консультации.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- РАЗДЕЛ ПОРТФОЛИО С ГРАДИЕНТНЫМИ РАМКАМИ -->
+    <section id="portfolio" class="portfolio">
+        <div class="container">
+            <h2 class="section-title fade-in">Портфолио</h2>
+            <p class="portfolio-counter fade-in delay-1">Показано <span>6</span> работ из портфолио</p>
+            
+            <div class="portfolio-grid">
+                <!-- Работа 1 -->
+                <div class="portfolio-item fade-in">
+                    <div class="portfolio-img-container">
+                        <img src="https://i.ibb.co/FbKCYBXy/image.png" alt="Лендинг 1" loading="lazy">
+                    </div>
+                </div>
+                
+                <!-- Работа 2 -->
+                <div class="portfolio-item fade-in delay-1">
+                    <div class="portfolio-img-container">
+                        <img src="https://i.ibb.co/RGN4jdxg/image.png" alt="Лендинг 2" loading="lazy">
+                    </div>
+                </div>
+                
+                <!-- Работа 3 -->
+                <div class="portfolio-item fade-in delay-2">
+                    <div class="portfolio-img-container">
+                        <img src="https://i.ibb.co/tGyrcXK/image.png" alt="Лендинг 3" loading="lazy">
+                    </div>
+                </div>
+                
+                <!-- Работа 4 -->
+                <div class="portfolio-item fade-in">
+                    <div class="portfolio-img-container">
+                        <img src="https://i.ibb.co/Y7psn2yM/image.png" alt="Лендинг 4" loading="lazy">
+                    </div>
+                </div>
+                
+                <!-- Работа 5 -->
+                <div class="portfolio-item fade-in delay-1">
+                    <div class="portfolio-img-container">
+                        <img src="https://i.ibb.co/d012Q3Kk/image.png" alt="Лендинг 5" loading="lazy">
+                    </div>
+                </div>
+                
+                <!-- Работа 6 -->
+                <div class="portfolio-item fade-in delay-2">
+                    <div class="portfolio-img-container">
+                        <img src="https://i.ibb.co/8DYYC3cB/image.png" alt="Лендинг 6" loading="lazy">
+                    </div>
                 </div>
             </div>
         </div>
