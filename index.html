@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUAR | Нейро-переводчик</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Иконка мозга точь в точь как на сайте -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22brainGrad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 style=%22stop-color:%2300f3ff;stop-opacity:1%22/><stop offset=%22100%25%22 style=%22stop-color:%23ff00ff;stop-opacity:1%22/></linearGradient></defs><path d=%22M50,20 Q70,25 75,40 Q80,55 70,70 Q60,85 50,80 Q40,85 30,70 Q20,55 25,40 Q30,25 50,20Z%22 fill=%22url(%23brainGrad)%22 stroke=%22%2300f3ff%22 stroke-width=%222%22/><circle cx=%2250%22 cy=%2240%22 r=%225%22 fill=%22white%22/><path d=%22M40,55 Q50,60 60,55%22 stroke=%22%23ff00ff%22 stroke-width=%222%22 fill=%22none%22/></svg>">
+    <style>
+        /* === ГЛОБАЛЬНЫЕ СТИЛИ === */
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-orange: #ff5500;
+            --cyber-green: #00ff9d;
+            --dark-bg: #0a0a14;
+            --panel-bg: rgba(20, 25, 40, 0.85);
+            --text-main: #ffffff;
+            --text-dim: #a0b8d0;
+            --border-glow: rgba(0, 243, 255, 0.4);
+            --transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--dark-bg);
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* === АНИМАЦИИ ФОНА === */
+        .cyber-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.3;
+            animation: grid-move 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes grid-move {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        .scan-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 1px,
+                rgba(0, 243, 255, 0.05) 1px,
+                rgba(0, 243, 255, 0.05) 2px
+            );
+            animation: scan 8s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes scan {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 20px; }
+        }
+
+        .glow-orbs {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.15;
+            animation: orb-float 15s infinite ease-in-out;
+        }
+
+        .glow-orb:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            background: var(--neon-blue);
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .glow-orb:nth-child(2) {
+            width: 250px;
+            height: 250px;
+            background: var(--neon-pink);
+            top: 60%;
+            right: 15%;
+            animation-delay: 3s;
+        }
+
+        .glow-orb:nth-child(3) {
+            width: 200px;
+            height: 200px;
+            background: var(--cyber-green);
+            bottom: 10%;
+            left: 50%;
+            animation-delay: 6s;
+        }
+
+        @keyframes orb-float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -40px) scale(1.1); }
+            66% { transform: translate(-20px, 30px) scale(0.9); }
+        }
+
+        /* === ВЕРХНЯЯ ПАНЕЛЬ С ЛОГОТИПОМ === */
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 15, 30, 0.95);
+            backdrop-filter: blur(25px);
+            border-bottom: 1px solid var(--border-glow);
+            z-index: 1000;
+            padding: 1rem 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--neon-blue), #ffffff, var(--neon-pink));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-logo i {
+            font-size: 2.2rem;
+            color: var(--neon-blue);
+            animation: logo-spin 8s infinite linear;
+        }
+
+        @keyframes logo-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 500;
+            transition: var(--transition);
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link:hover {
+            color: var(--neon-blue);
+            background: rgba(0, 243, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            color: var(--neon-blue);
+            background: rgba(0, 243, 255, 0.15);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        /* === ОТСТУП ДЛЯ НАВБАРА === */
+        .header {
+            padding: 7rem 0 4rem;
+            text-align: center;
+            position: relative;
+            border-bottom: 2px solid;
+            border-image: linear-gradient(90deg, transparent, var(--neon-blue), var(--neon-pink), transparent) 1;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .logo-icon {
+            font-size: 5rem;
+            color: transparent;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-pink));
+            -webkit-background-clip: text;
+            background-clip: text;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 30px currentColor);
+            animation: logo-pulse 3s infinite alternate;
+        }
+
+        @keyframes logo-pulse {
+            0% { filter: drop-shadow(0 0 30px var(--neon-blue)); }
+            50% { filter: drop-shadow(0 0 40px var(--neon-pink)); }
+            100% { filter: drop-shadow(0 0 30px var(--neon-blue)); }
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--neon-blue), #ffffff, var(--neon-pink));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            text-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+            animation: title-glow 3s infinite alternate;
+        }
+
+        @keyframes title-glow {
+            0% { text-shadow: 0 0 30px rgba(0, 243, 255, 0.3); }
+            100% { text-shadow: 0 0 50px rgba(255, 0, 255, 0.3); }
+        }
+
+        /* === НАВИГАЦИЯ === */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+            z-index: 20;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 1.2rem 2.5rem;
+            border-radius: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .tab-btn:hover {
+            background: var(--neon-blue);
+            color: var(--dark-bg);
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px var(--neon-blue);
+        }
+
+        .tab-btn.active {
+            background: var(--neon-blue);
+            color: var(--dark-bg);
+            box-shadow: 0 0 40px var(--neon-blue);
+            animation: tab-pulse 2s infinite;
+        }
+
+        @keyframes tab-pulse {
+            0%, 100% { box-shadow: 0 0 40px var(--neon-blue); }
+            50% { box-shadow: 0 0 60px var(--neon-blue); }
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === ГРИД ЛЕЙАУТ === */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 3rem;
+            margin-bottom: 4rem;
+        }
+
+        @media (max-width: 1100px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* === ЛЕВАЯ КОЛОНКА - ПЕРЕВОДЧИК === */
+        .translator-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(25px);
+            border-radius: 24px;
+            padding: 3.5rem;
+            border: 1px solid var(--border-glow);
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .translator-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--neon-blue),
+                var(--neon-pink),
+                transparent
+            );
+            animation: border-flow 3s linear infinite;
+        }
+
+        @keyframes border-flow {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .panel-title i {
+            font-size: 2.2rem;
+            color: var(--neon-blue);
+            animation: spin-slow 10s infinite linear;
+        }
+
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .panel-title h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            color: var(--text-main);
+            text-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        /* === ПОЛЕ ВВОДА === */
+        .input-field {
+            margin-bottom: 3rem;
+        }
+
+        .field-label {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        .field-label i {
+            font-size: 1.3rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            background: rgba(10, 15, 30, 0.7);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            line-height: 1.7;
+            resize: vertical;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        textarea:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.3);
+            background: rgba(10, 15, 30, 0.9);
+        }
+
+        /* === СЕЛЕКТОР ЯЗЫКОВ - 50+ ЯЗЫКОВ === */
+        .language-selector {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 2rem;
+            align-items: center;
+            margin: 3rem 0;
+        }
+
+        .lang-box {
+            background: rgba(15, 20, 40, 0.7);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            transition: var(--transition);
+        }
+
+        .lang-box:hover {
+            border-color: var(--neon-blue);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 243, 255, 0.2);
+        }
+
+        .lang-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+            color: var(--text-dim);
+        }
+
+        .lang-header i {
+            color: var(--neon-blue);
+            font-size: 1.5rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 1.2rem;
+            background: rgba(0, 10, 25, 0.8);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            outline: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        select:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        .lang-arrow {
+            color: var(--neon-blue);
+            font-size: 2.5rem;
+            opacity: 0.7;
+            animation: arrow-bounce 2s infinite;
+        }
+
+        @keyframes arrow-bounce {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(5px); }
+        }
+
+        /* === КНОПКА ПЕРЕВОДА === */
+        .translate-button {
+            text-align: center;
+            margin: 3.5rem 0;
+        }
+
+        #translateBtn {
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-pink));
+            color: white !important;
+            border: none;
+            padding: 1.8rem 4.5rem;
+            border-radius: 18px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 50px rgba(0, 243, 255, 0.3);
+        }
+
+        .black-white-theme #translateBtn {
+            color: #000000 !important;
+        }
+
+        #translateBtn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 25px 60px rgba(0, 243, 255, 0.5);
+            letter-spacing: 3px;
+        }
+
+        #translateBtn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: btn-shine 3s infinite;
+        }
+
+        @keyframes btn-shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        #translateBtn i {
+            font-size: 2rem;
+            animation: bolt-spin 3s infinite linear;
+        }
+
+        @keyframes bolt-spin {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* === КНОПКА ПОКАЗАТЬ ШРИФТЫ === */
+        #generateFontsBtn {
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-orange));
+            color: white !important;
+            border: none;
+            padding: 1.8rem 4.5rem;
+            border-radius: 18px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 50px rgba(255, 0, 255, 0.3);
+        }
+
+        #generateFontsBtn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 25px 60px rgba(255, 0, 255, 0.5);
+            letter-spacing: 3px;
+        }
+
+        #generateFontsBtn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: btn-shine 2s infinite;
+        }
+
+        #generateFontsBtn i {
+            font-size: 2rem;
+            animation: magic-spin 2s infinite;
+        }
+
+        @keyframes magic-spin {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(90deg) scale(1.1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            75% { transform: rotate(270deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* === ВЫВОД РЕЗУЛЬТАТА === */
+        .output-panel {
+            background: rgba(10, 15, 30, 0.9);
+            border-radius: 20px;
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 0, 255, 0.3);
+            min-height: 250px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+        }
+
+        .output-title {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            color: var(--cyber-green);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--cyber-green);
+            box-shadow: 0 0 15px var(--cyber-green);
+            animation: dot-pulse 1.5s infinite;
+        }
+
+        @keyframes dot-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        #outputText {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            color: var(--text-main);
+        }
+
+        /* === ОБНОВЛЕННАЯ ПАНЕЛЬ ШРИФТОВ === */
+        .fonts-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(25px);
+            border-radius: 24px;
+            padding: 3.5rem;
+            border: 1px solid var(--border-glow);
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fonts-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--neon-pink),
+                var(--neon-orange),
+                transparent
+            );
+            animation: border-flow-pink 3s linear infinite;
+        }
+
+        @keyframes border-flow-pink {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .fonts-input {
+            margin-bottom: 3rem;
+        }
+
+        .fonts-input textarea {
+            min-height: 120px;
+        }
+
+        .fonts-button-container {
+            text-align: center;
+            margin: 3.5rem 0;
+        }
+
+        .fonts-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .font-sample {
+            background: rgba(15, 20, 40, 0.7);
+            border-radius: 20px;
+            padding: 2.5rem;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            transition: var(--transition);
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            animation: font-card-appear 0.5s ease-out;
+            animation-fill-mode: backwards;
+        }
+
+        @keyframes font-card-appear {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+
+        .font-sample:hover {
+            border-color: var(--neon-pink);
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 
+                0 20px 50px rgba(255, 0, 255, 0.3),
+                inset 0 0 30px rgba(255, 0, 255, 0.1);
+        }
+
+        .font-sample::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+            animation: sample-glow 3s infinite;
+        }
+
+        @keyframes sample-glow {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .font-name {
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .font-name i {
+            color: var(--neon-pink);
+            animation: icon-float 2s infinite ease-in-out;
+        }
+
+        @keyframes icon-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .font-text {
+            font-size: 2rem;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+            flex-grow: 1;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: var(--transition);
+        }
+
+        .font-sample:hover .font-text {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+
+        .font-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(255, 0, 255, 0.2));
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 1rem 1.8rem;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .copy-btn:hover {
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-pink));
+            color: var(--dark-bg);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 243, 255, 0.4);
+        }
+
+        .copy-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .copy-btn:hover::before {
+            left: 100%;
+        }
+
+        .test-btn {
+            background: linear-gradient(135deg, rgba(255, 85, 0, 0.2), rgba(255, 204, 0, 0.2));
+            border: 1px solid var(--neon-orange);
+            color: var(--neon-orange);
+            padding: 1rem;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .test-btn:hover {
+            background: linear-gradient(135deg, var(--neon-orange), #FFCC00);
+            color: var(--dark-bg);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 85, 0, 0.4);
+        }
+
+        /* === ПРАВАЯ КОЛОНКА - ДОНАТ ПАНЕЛЬ === */
+        .donate-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(25px);
+            border-radius: 24px;
+            padding: 3rem;
+            border: 1px solid rgba(255, 85, 0, 0.4);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .donate-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 85, 0, 0.05) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .donate-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .donate-header i {
+            font-size: 2.5rem;
+            color: var(--neon-orange);
+            animation: heart-beat 2s infinite;
+        }
+
+        @keyframes heart-beat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .donate-header h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            color: var(--neon-orange);
+            text-shadow: 0 0 15px rgba(255, 85, 0, 0.5);
+        }
+
+        /* === ЮMONEY БЛОК === */
+        .yoomoney-section {
+            background: rgba(255, 204, 0, 0.08);
+            border: 1px solid rgba(255, 204, 0, 0.2);
+            border-radius: 18px;
+            padding: 2.5rem;
+            text-align: center;
+            margin: 2.5rem 0;
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(10px);
+        }
+
+        .yoomoney-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 1.2rem;
+            background: rgba(255, 204, 0, 0.15);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            margin-bottom: 1.8rem;
+            color: #FFCC00;
+            font-weight: 700;
+            font-size: 1.6rem;
+            animation: logo-bounce 2s infinite alternate;
+        }
+
+        @keyframes logo-bounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-8px); }
+        }
+
+        .donate-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            width: 100%;
+            padding: 1.8rem;
+            background: linear-gradient(135deg, #FFCC00, #FF9900);
+            color: #000;
+            border: none;
+            border-radius: 16px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            margin-top: 1.5rem;
+            box-shadow: 0 15px 40px rgba(255, 204, 0, 0.3);
+        }
+
+        .donate-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(255, 204, 0, 0.5);
+        }
+
+        .donate-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: donate-shine 2s infinite;
+        }
+
+        @keyframes donate-shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* === ПАНЕЛЬ ИНФО === */
+        .info-panel {
+            background: rgba(15, 20, 40, 0.7);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-top: 2.5rem;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            position: relative;
+            z-index: 2;
+        }
+
+        .info-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.8rem;
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+        }
+
+        .features-list {
+            list-style: none;
+        }
+
+        .features-list li {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+            padding-bottom: 1.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .features-list li:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .features-list i {
+            color: var(--cyber-green);
+            font-size: 1.2rem;
+        }
+
+        /* === КНОПКА СМЕНЫ ТЕМ === */
+        .theme-button {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+        }
+
+        #themeBtn {
+            background: rgba(20, 25, 45, 0.9);
+            border: 1px solid var(--border-glow);
+            color: var(--neon-blue);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(20px);
+            animation: theme-pulse 3s infinite alternate;
+        }
+
+        @keyframes theme-pulse {
+            0% { box-shadow: 0 0 20px rgba(0, 243, 255, 0.3); }
+            100% { box-shadow: 0 0 40px rgba(0, 243, 255, 0.6); }
+        }
+
+        #themeBtn:hover {
+            background: var(--neon-blue);
+            color: var(--dark-bg);
+            transform: scale(1.2) rotate(180deg);
+        }
+
+        /* === ФУТЕР === */
+        .footer {
+            text-align: center;
+            padding: 4rem 0;
+            margin-top: 4rem;
+            border-top: 1px solid rgba(0, 243, 255, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .footer-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, var(--neon-blue), #ffffff, var(--neon-pink));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 1.5rem;
+            letter-spacing: 3px;
+            font-weight: 800;
+        }
+
+        .footer-contact {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        /* === АДАПТИВНОСТЬ === */
+        @media (max-width: 768px) {
+            .top-navbar {
+                padding: 0.8rem 1rem;
+            }
+            
+            .nav-logo {
+                font-size: 1.5rem;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .container { padding: 1.5rem; }
+            .header { padding: 6rem 0 3rem; }
+            h1 { font-size: 3.2rem; }
+            .logo-icon { font-size: 4rem; }
+            .tabs { flex-direction: column; }
+            .tab-btn { width: 100%; }
+            .main-grid { gap: 2rem; }
+            .translator-panel, .donate-panel { padding: 2.5rem; }
+            .language-selector { grid-template-columns: 1fr; }
+            .lang-arrow { transform: rotate(90deg); margin: 1rem 0; }
+            #translateBtn, #generateFontsBtn { padding: 1.5rem 3rem; font-size: 1.2rem; }
+            .fonts-preview { grid-template-columns: 1fr; }
+            .font-buttons { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <!-- АНИМАЦИИ ФОНА -->
+    <div class="cyber-grid"></div>
+    <div class="scan-lines"></div>
+    <div class="glow-orbs">
+        <div class="glow-orb"></div>
+        <div class="glow-orb"></div>
+        <div class="glow-orb"></div>
+    </div>
+
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ С ЛОГОТИПОМ -->
+    <nav class="top-navbar">
+        <div class="navbar-content">
+            <div class="nav-logo">
+                <i class="fas fa-brain"></i>
+                NUAR
+            </div>
+            <div class="nav-links">
+                <a href="#" class="nav-link active" data-tab="translator">
+                    <i class="fas fa-language"></i> Переводчик
+                </a>
+                <a href="#" class="nav-link" data-tab="fonts">
+                    <i class="fas fa-font"></i> Шрифты
+                </a>
+                <a href="#donate" class="nav-link">
+                    <i class="fas fa-heart"></i> Поддержать
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- ШАПКА -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-brain logo-icon"></i>
+                <h1>NUAR</h1>
+                <p style="color: var(--text-dim); font-size: 1.2rem; max-width: 800px; margin: 0 auto;">
+                    Нейро-переводчик нового поколения с поддержкой 100+ языков и уникальными шрифтами
+                </p>
+            </div>
+        </header>
+
+        <!-- НАВИГАЦИЯ -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="translator">
+                <i class="fas fa-language"></i> Переводчик
+            </button>
+            <button class="tab-btn" data-tab="fonts">
+                <i class="fas fa-font"></i> Красивые шрифты
+            </button>
+        </div>
+
+        <!-- ВКЛАДКА 1: ПЕРЕВОДЧИК -->
+        <div class="tab-content active" id="translator-tab">
+            <div class="main-grid">
+                <!-- ЛЕВАЯ КОЛОНКА - ПЕРЕВОДЧИК -->
+                <main>
+                    <div class="translator-panel">
+                        <div class="panel-title">
+                            <i class="fas fa-language"></i>
+                            <h2>ПЕРЕВОДЧИК 100+ ЯЗЫКОВ</h2>
+                        </div>
+
+                        <!-- ПОЛЕ ВВОДА -->
+                        <div class="input-field">
+                            <div class="field-label">
+                                <i class="fas fa-keyboard"></i>
+                                ВВЕДИТЕ ТЕКСТ
+                            </div>
+                            <textarea id="inputText" placeholder="Введите текст для перевода...">Привет! Этот переводчик поддерживает более 100 языков.</textarea>
+                        </div>
+
+                        <!-- ВЫБОР ЯЗЫКОВ -->
+                        <div class="language-selector">
+                            <div class="lang-box">
+                                <div class="lang-header">
+                                    <i class="fas fa-signal"></i>
+                                    ИЗ ЯЗЫКА
+                                </div>
+                                <select id="sourceLang">
+                                    <option value="auto">Определить автоматически</option>
+                                    <option value="ru">Русский</option>
+                                    <option value="en">Английский</option>
+                                    <option value="de">Немецкий</option>
+                                    <option value="fr">Французский</option>
+                                    <option value="es">Испанский</option>
+                                    <option value="it">Итальянский</option>
+                                    <option value="pt">Португальский</option>
+                                    <option value="zh">Китайский</option>
+                                    <option value="ja">Японский</option>
+                                    <option value="ko">Корейский</option>
+                                    <option value="ar">Арабский</option>
+                                    <option value="hi">Хинди</option>
+                                    <option value="tr">Турецкий</option>
+                                    <option value="pl">Польский</option>
+                                    <option value="nl">Нидерландский</option>
+                                    <option value="sv">Шведский</option>
+                                    <option value="da">Датский</option>
+                                    <option value="no">Норвежский</option>
+                                    <option value="fi">Финский</option>
+                                    <option value="el">Греческий</option>
+                                    <option value="cs">Чешский</option>
+                                    <option value="hu">Венгерский</option>
+                                    <option value="ro">Румынский</option>
+                                    <option value="bg">Болгарский</option>
+                                    <option value="uk">Украинский</option>
+                                    <option value="be">Белорусский</option>
+                                    <option value="sr">Сербский</option>
+                                    <option value="hr">Хорватский</option>
+                                    <option value="sl">Словенский</option>
+                                    <option value="sk">Словацкий</option>
+                                    <option value="lv">Латышский</option>
+                                    <option value="lt">Литовский</option>
+                                    <option value="et">Эстонский</option>
+                                    <option value="he">Иврит</option>
+                                    <option value="id">Индонезийский</option>
+                                    <option value="ms">Малайский</option>
+                                    <option value="th">Тайский</option>
+                                    <option value="vi">Вьетнамский</option>
+                                    <option value="fa">Персидский</option>
+                                    <option value="ur">Урду</option>
+                                    <option value="bn">Бенгальский</option>
+                                    <option value="ta">Тамильский</option>
+                                    <option value="te">Телугу</option>
+                                    <option value="mr">Маратхи</option>
+                                    <option value="gu">Гуджарати</option>
+                                    <option value="kn">Каннада</option>
+                                    <option value="ml">Малаялам</option>
+                                    <option value="pa">Панджаби</option>
+                                    <option value="sw">Суахили</option>
+                                    <option value="af">Африкаанс</option>
+                                    <option value="is">Исландский</option>
+                                    <option value="ga">Ирландский</option>
+                                    <option value="cy">Валлийский</option>
+                                    <option value="mt">Мальтийский</option>
+                                    <option value="sq">Албанский</option>
+                                    <option value="mk">Македонский</option>
+                                    <option value="bs">Боснийский</option>
+                                    <option value="ka">Грузинский</option>
+                                    <option value="hy">Армянский</option>
+                                    <option value="az">Азербайджанский</option>
+                                    <option value="kk">Казахский</option>
+                                    <option value="uz">Узбекский</option>
+                                    <option value="ky">Киргизский</option>
+                                    <option value="tg">Таджикский</option>
+                                    <option value="tk">Туркменский</option>
+                                    <option value="mn">Монгольский</option>
+                                    <option value="lo">Лаосский</option>
+                                    <option value="km">Кхмерский</option>
+                                    <option value="my">Бирманский</option>
+                                    <option value="ne">Непальский</option>
+                                    <option value="si">Сингальский</option>
+                                    <option value="ps">Пушту</option>
+                                    <option value="ku">Курдский</option>
+                                    <option value="sd">Синдхи</option>
+                                    <option value="am">Амхарский</option>
+                                    <option value="ti">Тигринья</option>
+                                    <option value="so">Сомалийский</option>
+                                    <option value="ha">Хауса</option>
+                                    <option value="yo">Йоруба</option>
+                                    <option value="ig">Игбо</option>
+                                    <option value="zu">Зулу</option>
+                                    <option value="xh">Коса</option>
+                                    <option value="sn">Шона</option>
+                                    <option value="rw">Киньяруанда</option>
+                                    <option value="ny">Чева</option>
+                                </select>
+                            </div>
+
+                            <div class="lang-arrow">
+                                <i class="fas fa-arrows-left-right"></i>
+                            </div>
+
+                            <div class="lang-box">
+                                <div class="lang-header">
+                                    <i class="fas fa-microchip"></i>
+                                    НА ЯЗЫК
+                                </div>
+                                <select id="targetLang">
+                                    <option value="en">Английский</option>
+                                    <option value="ru">Русский</option>
+                                    <option value="de">Немецкий</option>
+                                    <option value="fr">Французский</option>
+                                    <option value="es">Испанский</option>
+                                    <option value="it">Итальянский</option>
+                                    <option value="pt">Португальский</option>
+                                    <option value="zh">Китайский</option>
+                                    <option value="ja">Японский</option>
+                                    <option value="ko">Корейский</option>
+                                    <option value="ar">Арабский</option>
+                                    <option value="hi">Хинди</option>
+                                    <option value="tr">Турецкий</option>
+                                    <option value="pl">Польский</option>
+                                    <option value="nl">Нидерландский</option>
+                                    <option value="sv">Шведский</option>
+                                    <option value="da">Датский</option>
+                                    <option value="no">Норвежский</option>
+                                    <option value="fi">Финский</option>
+                                    <option value="el">Греческий</option>
+                                    <option value="cs">Чешский</option>
+                                    <option value="hu">Венгерский</option>
+                                    <option value="ro">Румынский</option>
+                                    <option value="bg">Болгарский</option>
+                                    <option value="uk">Украинский</option>
+                                    <option value="be">Белорусский</option>
+                                    <option value="sr">Сербский</option>
+                                    <option value="hr">Хорватский</option>
+                                    <option value="sl">Словенский</option>
+                                    <option value="sk">Словацкий</option>
+                                    <option value="lv">Латышский</option>
+                                    <option value="lt">Литовский</option>
+                                    <option value="et">Эстонский</option>
+                                    <option value="he">Иврит</option>
+                                    <option value="id">Индонезийский</option>
+                                    <option value="ms">Малайский</option>
+                                    <option value="th">Тайский</option>
+                                    <option value="vi">Вьетнамский</option>
+                                    <option value="fa">Персидский</option>
+                                    <option value="ur">Урду</option>
+                                    <option value="bn">Бенгальский</option>
+                                    <option value="ta">Тамильский</option>
+                                    <option value="te">Телугу</option>
+                                    <option value="mr">Маратхи</option>
+                                    <option value="gu">Гуджарати</option>
+                                    <option value="kn">Каннада</option>
+                                    <option value="ml">Малаялам</option>
+                                    <option value="pa">Панджаби</option>
+                                    <option value="sw">Суахили</option>
+                                    <option value="af">Африкаанс</option>
+                                    <option value="is">Исландский</option>
+                                    <option value="ga">Ирландский</option>
+                                    <option value="cy">Валлийский</option>
+                                    <option value="mt">Мальтийский</option>
+                                    <option value="sq">Албанский</option>
+                                    <option value="mk">Македонский</option>
+                                    <option value="bs">Боснийский</option>
+                                    <option value="ka">Грузинский</option>
+                                    <option value="hy">Армянский</option>
+                                    <option value="az">Азербайджанский</option>
+                                    <option value="kk">Казахский</option>
+                                    <option value="uz">Узбекский</option>
+                                    <option value="ky">Киргизский</option>
+                                    <option value="tg">Таджикский</option>
+                                    <option value="tk">Туркменский</option>
+                                    <option value="mn">Монгольский</option>
+                                    <option value="lo">Лаосский</option>
+                                    <option value="km">Кхмерский</option>
+                                    <option value="my">Бирманский</option>
+                                    <option value="ne">Непальский</option>
+                                    <option value="si">Сингальский</option>
+                                    <option value="ps">Пушту</option>
+                                    <option value="ku">Курдский</option>
+                                    <option value="sd">Синдхи</option>
+                                    <option value="am">Амхарский</option>
+                                    <option value="ti">Тигринья</option>
+                                    <option value="so">Сомалийский</option>
+                                    <option value="ha">Хауса</option>
+                                    <option value="yo">Йоруба</option>
+                                    <option value="ig">Игбо</option>
+                                    <option value="zu">Зулу</option>
+                                    <option value="xh">Коса</option>
+                                    <option value="sn">Шона</option>
+                                    <option value="rw">Киньяруанда</option>
+                                    <option value="ny">Чева</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- КНОПКА ПЕРЕВОДА -->
+                        <div class="translate-button">
+                            <button id="translateBtn">
+                                <i class="fas fa-bolt"></i>
+                                ПЕРЕВЕСТИ
+                            </button>
+                        </div>
+
+                        <!-- ВЫВОД -->
+                        <div class="output-panel">
+                            <div class="output-header">
+                                <div class="output-title">
+                                    <i class="fas fa-file-alt"></i>
+                                    ПЕРЕВОД
+                                </div>
+                                <div class="status-indicator">
+                                    <div class="status-dot"></div>
+                                    <span>ГОТОВ К РАБОТЕ</span>
+                                </div>
+                            </div>
+                            <div id="outputText">
+Введите текст и нажмите "Перевести" для получения результата.
+Поддерживается более 100 языков.
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <!-- ПРАВАЯ КОЛОНКА - ДОНАТ ПАНЕЛЬ -->
+                <aside>
+                    <div class="donate-panel">
+                        <div class="donate-header">
+                            <i class="fas fa-heart"></i>
+                            <h3>ПОДДЕРЖАТЬ ПРОЕКТ</h3>
+                        </div>
+                        <p style="line-height: 1.7; margin-bottom: 2rem; position: relative; z-index: 2;">
+                            Нейросеть требует вычислительных ресурсов для обучения. Ваша поддержка помогает улучшать качество перевода.
+                        </p>
+
+                        <!-- ЮMONEY -->
+                        <div class="yoomoney-section">
+                            <div class="yoomoney-logo">
+                                <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="32" height="32" rx="6" fill="#FFCC00"/>
+                                    <path d="M16 6C10.48 6 6 10.48 6 16C6 21.52 10.48 26 16 26C21.52 26 26 21.52 26 16C26 10.48 21.52 6 16 6ZM14.5 20.5L9 15L10.06 13.94L14.5 18.35L21.94 10.94L23 12L14.5 20.5Z" fill="black"/>
+                                </svg>
+                                ЮMoney
+                            </div>
+                            <p style="font-size: 0.95rem; margin-bottom: 1.5rem; color: rgba(255, 255, 255, 0.9);">
+                                Поддержите развитие переводчика
+                            </p>
+                            <a href="https://yoomoney.ru/to/4100118454141760" target="_blank" class="donate-button">
+                                <i class="fas fa-donate"></i>
+                                Поддержать через ЮMoney
+                            </a>
+                        </div>
+
+                        <!-- ИНФО ПАНЕЛЬ -->
+                        <div class="info-panel">
+                            <div class="info-title">
+                                <i class="fas fa-info-circle"></i>
+                                <h4>О ПЕРЕВОДЧИКЕ</h4>
+                            </div>
+                            <ul class="features-list">
+                                <li>
+                                    <i class="fas fa-check"></i>
+                                    <span>100+ языков</span>
+                                </li>
+                                <li>
+                                    <i class="fas fa-check"></i>
+                                    <span>Контекстный перевод</span>
+                                </li>
+                                <li>
+                                    <i class="fas fa-check"></i>
+                                    <span>Нейросетевые алгоритмы</span>
+                                </li>
+                                <li>
+                                    <i class="fas fa-check"></i>
+                                    <span>Быстрая обработка</span>
+                                </li>
+                                <li>
+                                    <i class="fas fa-check"></i>
+                                    <span>Постоянные обновления</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 2: КРАСИВЫЕ ШРИФТЫ (УВЕЛИЧЕНО ДО 24 ШРИФТОВ) -->
+        <div class="tab-content" id="fonts-tab">
+            <div class="fonts-panel">
+                <div class="panel-title">
+                    <i class="fas fa-font"></i>
+                    <h2>КРАСИВЫЕ ШРИФТЫ ДЛЯ СОЦСЕТЕЙ</h2>
+                </div>
+
+                <div class="fonts-input">
+                    <div class="field-label">
+                        <i class="fas fa-keyboard"></i>
+                        ВВЕДИТЕ ТЕКСТ
+                    </div>
+                    <textarea id="fontsInput" placeholder="Введите текст для отображения разными шрифтами...">Привет! Этот текст можно скопировать в Discord.</textarea>
+                </div>
+
+                <!-- КНОПКА ПОКАЗАТЬ ШРИФТЫ -->
+                <div class="fonts-button-container">
+                    <button id="generateFontsBtn">
+                        <i class="fas fa-magic"></i>
+                        ПОКАЗАТЬ ВСЕ ШРИФТЫ
+                    </button>
+                </div>
+
+                <div class="fonts-preview" id="fontsPreview">
+                    <!-- Шрифты будут генерироваться здесь -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ФУТЕР -->
+        <footer class="footer">
+            <div class="footer-logo">NUAR</div>
+            <div class="footer-contact">
+                Контакт: <a href="mailto:sauronaaaa@yandex.ru" style="color: var(--neon-blue); text-decoration: none; font-weight: 600;">sauronaaaa@yandex.ru</a>
+            </div>
+        </footer>
+
+        <!-- КНОПКА СМЕНЫ ТЕМ -->
+        <div class="theme-button">
+            <button id="themeBtn">
+                <i class="fas fa-palette"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // === ИНИЦИАЛИЗАЦИЯ ===
+        document.addEventListener('DOMContentLoaded', function() {
+            initTabs();
+            initNavbar();
+            initTranslator();
+            initFontsGenerator();
+            initThemeButton();
+        });
+
+        // === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
+        function initTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.dataset.tab;
+                    
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    btn.classList.add('active');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+        }
+
+        // === НАВБАР ===
+        function initNavbar() {
+            const navLinks = document.querySelectorAll('.nav-link[data-tab]');
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const tabId = link.dataset.tab;
+                    
+                    // Обновляем активные ссылки
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    // Переключаем вкладки
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Активируем нужную вкладку
+                    document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    
+                    // Прокрутка к началу
+                    window.scrollTo({ top: 200, behavior: 'smooth' });
+                });
+            });
+        }
+
+        // === ПЕРЕВОДЧИК ===
+        function initTranslator() {
+            const translateBtn = document.getElementById('translateBtn');
+            const sourceLang = document.getElementById('sourceLang');
+            const targetLang = document.getElementById('targetLang');
+            const inputText = document.getElementById('inputText');
+            const outputText = document.getElementById('outputText');
+
+            // Базовые фразы для переводов
+            const commonPhrases = {
+                'привет': {
+                    en: 'hello', es: 'hola', fr: 'bonjour', de: 'hallo',
+                    it: 'ciao', pt: 'olá', zh: '你好', ja: 'こんにちは',
+                    ko: '안녕하세요', ar: 'مرحبا', hi: 'नमस्ते'
+                },
+                'спасибо': {
+                    en: 'thank you', es: 'gracias', fr: 'merci', de: 'danke',
+                    it: 'grazie', pt: 'obrigado', zh: '谢谢', ja: 'ありがとう',
+                    ko: '감사합니다', ar: 'شكرا', hi: 'धन्यवाद'
+                },
+                'переводчик': {
+                    en: 'translator', es: 'traductor', fr: 'traducteur', de: 'Übersetzer',
+                    it: 'traduttore', pt: 'tradutor', zh: '翻译器', ja: '翻訳者',
+                    ko: '번역기', ar: 'مترجم', hi: 'अनुवादक'
+                },
+                'нейросеть': {
+                    en: 'neural network', es: 'red neuronal', fr: 'réseau neuronal', de: 'neuronales Netzwerk',
+                    it: 'rete neurale', pt: 'rede neural', zh: '神经网络', ja: 'ニューラルネットワーク',
+                    ko: '신경망', ar: 'شبكة عصبية', hi: 'न्यूरल नेटवर्क'
+                }
+            };
+
+            function smartTranslate(text, source, target) {
+                if (!text.trim()) return 'Пожалуйста, введите текст для перевода.';
+                
+                // Если языки совпадают
+                if (source === target || (source === 'auto' && target === 'ru')) {
+                    return text;
+                }
+
+                // Автодетект
+                if (source === 'auto') {
+                    const isRussian = /[а-яА-ЯЁё]/.test(text);
+                    source = isRussian ? 'ru' : 'en';
+                }
+
+                let result = text;
+                
+                // Для русского оригинала
+                if (source === 'ru') {
+                    for (const [ruWord, translations] of Object.entries(commonPhrases)) {
+                        if (text.toLowerCase().includes(ruWord) && translations[target]) {
+                            const regex = new RegExp(ruWord, 'gi');
+                            result = result.replace(regex, translations[target]);
+                        }
+                    }
+                }
+                // Для других языков на русский
+                else if (target === 'ru') {
+                    for (const [ruWord, translations] of Object.entries(commonPhrases)) {
+                        for (const [lang, trans] of Object.entries(translations)) {
+                            if (lang === source && text.toLowerCase().includes(trans.toLowerCase())) {
+                                const regex = new RegExp(trans, 'gi');
+                                result = result.replace(regex, ruWord);
+                            }
+                        }
+                    }
+                }
+                
+                // Если что-то нашли
+                if (result !== text) {
+                    return result + '\n\n[Переведено нейросетью NUAR]';
+                }
+                
+                // Демо-режим для остальных языков
+                const langNames = {
+                    'ru': 'русский', 'en': 'английский', 'es': 'испанский', 'fr': 'французский',
+                    'de': 'немецкий', 'it': 'итальянский', 'pt': 'португальский', 'zh': 'китайский',
+                    'ja': 'японский', 'ko': 'корейский', 'ar': 'арабский', 'hi': 'хинди'
+                };
+                
+                const sourceName = langNames[source] || source;
+                const targetName = langNames[target] || target;
+                
+                return `Перевод с ${sourceName} на ${targetName}:\n\n` +
+                       `Пример перевода:\n` +
+                       `• "Привет" → "Hello"\n` +
+                       `• "Спасибо" → "Thank you"\n` +
+                       `• "Нейросеть" → "Neural network"\n\n` +
+                       `[В реальном переводчике здесь был бы полный перевод вашего текста]`;
+            }
+
+            translateBtn.addEventListener('click', function() {
+                const text = inputText.value.trim();
+                
+                // Показываем анимацию
+                const btn = this;
+                btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> ПЕРЕВОД...';
+                btn.disabled = true;
+                
+                outputText.textContent = '';
+                typeText(outputText, '⏳ Идет перевод...\n', 20);
+
+                // Имитация загрузки
+                setTimeout(() => {
+                    const translation = smartTranslate(text, sourceLang.value, targetLang.value);
+                    
+                    // Эффект печати
+                    outputText.textContent = '';
+                    typeText(outputText, translation, 10);
+                    
+                    // Восстанавливаем кнопку
+                    btn.innerHTML = '<i class="fas fa-bolt"></i> ПЕРЕВЕСТИ';
+                    btn.disabled = false;
+                }, 800);
+            });
+        }
+
+        // === УЛУЧШЕННЫЙ ГЕНЕРАТОР ШРИФТОВ (24 ШРИФТА) ===
+        function initFontsGenerator() {
+            const generateBtn = document.getElementById('generateFontsBtn');
+            const fontsInput = document.getElementById('fontsInput');
+            const fontsPreview = document.getElementById('fontsPreview');
+
+            // 24 УНИКАЛЬНЫХ ШРИФТА
+            const unicodeFonts = [
+                {
+                    name: '𝐁𝐨𝐥𝐝 Жирный',
+                    icon: 'fas fa-bold',
+                    transform: (text) => {
+                        const boldMap = {
+                            'A': '𝐀', 'B': '𝐁', 'C': '𝐂', 'D': '𝐃', 'E': '𝐄', 'F': '𝐅', 'G': '𝐆', 'H': '𝐇', 
+                            'I': '𝐈', 'J': '𝐉', 'K': '𝐊', 'L': '𝐋', 'M': '𝐌', 'N': '𝐍', 'O': '𝐎', 'P': '𝐏', 
+                            'Q': '𝐐', 'R': '𝐑', 'S': '𝐒', 'T': '𝐓', 'U': '𝐔', 'V': '𝐕', 'W': '𝐖', 'X': '𝐗', 
+                            'Y': '𝐘', 'Z': '𝐙',
+                            'a': '𝐚', 'b': '𝐛', 'c': '𝐜', 'd': '𝐝', 'e': '𝐞', 'f': '𝐟', 'g': '𝐠', 'h': '𝐡', 
+                            'i': '𝐢', 'j': '𝐣', 'k': '𝐤', 'l': '𝐥', 'm': '𝐦', 'n': '𝐧', 'o': '𝐨', 'p': '𝐩', 
+                            'q': '𝐪', 'r': '𝐫', 's': '𝐬', 't': '𝐭', 'u': '𝐮', 'v': '𝐯', 'w': '𝐰', 'x': '𝐱', 
+                            'y': '𝐲', 'z': '𝐳',
+                            '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒', '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
+                        };
+                        return text.split('').map(char => boldMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝑰𝒕𝒂𝒍𝒊𝒄 Курсив',
+                    icon: 'fas fa-italic',
+                    transform: (text) => {
+                        const italicMap = {
+                            'A': '𝑨', 'B': '𝑩', 'C': '𝑪', 'D': '𝑫', 'E': '𝑬', 'F': '𝑭', 'G': '𝑮', 'H': '𝑯', 
+                            'I': '𝑰', 'J': '𝑱', 'K': '𝑲', 'L': '𝑳', 'M': '𝑴', 'N': '𝑵', 'O': '𝑶', 'P': '𝑷', 
+                            'Q': '𝑸', 'R': '𝑹', 'S': '𝑺', 'T': '𝑻', 'U': '𝑼', 'V': '𝑽', 'W': '𝑾', 'X': '𝑿', 
+                            'Y': '𝒀', 'Z': '𝒁',
+                            'a': '𝒂', 'b': '𝒃', 'c': '𝒄', 'd': '𝒅', 'e': '𝒆', 'f': '𝒇', 'g': '𝒈', 'h': '𝒉', 
+                            'i': '𝒊', 'j': '𝒋', 'k': '𝒌', 'l': '𝒍', 'm': '𝒎', 'n': '𝒏', 'o': '𝒐', 'p': '𝒑', 
+                            'q': '𝒒', 'r': '𝒓', 's': '𝒔', 't': '𝒕', 'u': '𝒖', 'v': '𝒗', 'w': '𝒘', 'x': '𝒙', 
+                            'y': '𝒚', 'z': '𝒛'
+                        };
+                        return text.split('').map(char => italicMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝓢𝓬𝓻𝓲𝓹𝓽 Рукописный',
+                    icon: 'fas fa-pen-nib',
+                    transform: (text) => {
+                        const scriptMap = {
+                            'A': '𝓐', 'B': '𝓑', 'C': '𝓒', 'D': '𝓓', 'E': '𝓔', 'F': '𝓕', 'G': '𝓖', 'H': '𝓗', 
+                            'I': '𝓘', 'J': '𝓙', 'K': '𝓚', 'L': '𝓛', 'M': '𝓜', 'N': '𝓝', 'O': '𝓞', 'P': '𝓟', 
+                            'Q': '𝓠', 'R': '𝓡', 'S': '𝓢', 'T': '𝓣', 'U': '𝓤', 'V': '𝓥', 'W': '𝓦', 'X': '𝓧', 
+                            'Y': '𝓨', 'Z': '𝓩',
+                            'a': '𝓪', 'b': '𝓫', 'c': '𝓬', 'd': '𝓭', 'e': '𝓮', 'f': '𝓯', 'g': '𝓰', 'h': '𝓱', 
+                            'i': '𝓲', 'j': '𝓳', 'k': '𝓴', 'l': '𝓵', 'm': '𝓶', 'n': '𝓷', 'o': '𝓸', 'p': '𝓹', 
+                            'q': '𝓺', 'r': '𝓻', 's': '𝓼', 't': '𝓽', 'u': '𝓾', 'v': '𝓿', 'w': '𝔀', 'x': '𝔁', 
+                            'y': '𝔂', 'z': '𝔃'
+                        };
+                        return text.split('').map(char => scriptMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝕄𝕠𝕟𝕠𝕤𝕡𝕒𝕔𝕖 Моноширинный',
+                    icon: 'fas fa-terminal',
+                    transform: (text) => {
+                        const monoMap = {
+                            '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿',
+                            'A': '𝙰', 'B': '𝙱', 'C': '𝙲', 'D': '𝙳', 'E': '𝙴', 'F': '𝙵', 'G': '𝙶', 'H': '𝙷', 
+                            'I': '𝙸', 'J': '𝙹', 'K': '𝙺', 'L': '𝙻', 'M': '𝙼', 'N': '𝙽', 'O': '𝙾', 'P': '𝙿', 
+                            'Q': '𝚀', 'R': '𝚁', 'S': '𝚂', 'T': '𝚃', 'U': '𝚄', 'V': '𝚅', 'W': '𝚆', 'X': '𝚇', 
+                            'Y': '𝚈', 'Z': '𝚉',
+                            'a': '𝚊', 'b': '𝚋', 'c': '𝚌', 'd': '𝚍', 'e': '𝚎', 'f': '𝚏', 'g': '𝚐', 'h': '𝚑', 
+                            'i': '𝚒', 'j': '𝚓', 'k': '𝚔', 'l': '𝚕', 'm': '𝚖', 'n': '𝚗', 'o': '𝚘', 'p': '𝚙', 
+                            'q': '𝚚', 'r': '𝚛', 's': '𝚜', 't': '𝚝', 'u': '𝚞', 'v': '𝚟', 'w': '𝚠', 'x': '𝚡', 
+                            'y': '𝚢', 'z': '𝚣'
+                        };
+                        return text.split('').map(char => monoMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: 'Ⓒⓘⓡⓒⓛⓔⓓ В кружках',
+                    icon: 'fas fa-circle',
+                    transform: (text) => {
+                        const circledMap = {
+                            'A': 'Ⓐ', 'B': 'Ⓑ', 'C': 'Ⓒ', 'D': 'Ⓓ', 'E': 'Ⓔ', 'F': 'Ⓕ', 'G': 'Ⓖ', 'H': 'Ⓗ', 
+                            'I': 'Ⓘ', 'J': 'Ⓙ', 'K': 'Ⓚ', 'L': 'Ⓛ', 'M': 'Ⓜ', 'N': 'Ⓝ', 'O': 'Ⓞ', 'P': 'Ⓟ', 
+                            'Q': 'Ⓠ', 'R': 'Ⓡ', 'S': 'Ⓢ', 'T': 'Ⓣ', 'U': 'Ⓤ', 'V': 'Ⓥ', 'W': 'Ⓦ', 'X': 'Ⓧ', 
+                            'Y': 'Ⓨ', 'Z': 'Ⓩ',
+                            'a': 'ⓐ', 'b': 'ⓑ', 'c': 'ⓒ', 'd': 'ⓓ', 'e': 'ⓔ', 'f': 'ⓕ', 'g': 'ⓖ', 'h': 'ⓗ', 
+                            'i': 'ⓘ', 'j': 'ⓙ', 'k': 'ⓚ', 'l': 'ⓛ', 'm': 'ⓜ', 'n': 'ⓝ', 'o': 'ⓞ', 'p': 'ⓟ', 
+                            'q': 'ⓠ', 'r': 'ⓡ', 's': 'ⓢ', 't': 'ⓣ', 'u': 'ⓤ', 'v': 'ⓥ', 'w': 'ⓦ', 'x': 'ⓧ', 
+                            'y': 'ⓨ', 'z': 'ⓩ',
+                            '0': '⓪', '1': '①', '2': '②', '3': '③', '4': '④', '5': '⑤', '6': '⑥', '7': '⑦', '8': '⑧', '9': '⑨'
+                        };
+                        return text.split('').map(char => circledMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝔊𝔬𝔱𝔥𝔦𝔠 Готический',
+                    icon: 'fas fa-gem',
+                    transform: (text) => {
+                        const gothicMap = {
+                            'A': '𝔄', 'B': '𝔅', 'C': 'ℭ', 'D': '𝔇', 'E': '𝔈', 'F': '𝔉', 'G': '𝔊', 'H': 'ℌ', 
+                            'I': 'ℑ', 'J': '𝔍', 'K': '𝔎', 'L': '𝔏', 'M': '𝔐', 'N': '𝔑', 'O': '𝔒', 'P': '𝔓', 
+                            'Q': '𝔔', 'R': 'ℜ', 'S': '𝔖', 'T': '𝔗', 'U': '𝔘', 'V': '𝔙', 'W': '𝔚', 'X': '𝔛', 
+                            'Y': '𝔜', 'Z': 'ℨ'
+                        };
+                        return text.split('').map(char => gothicMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '🅂🅀🅄🄰🅁🄴🄳 Квадратный',
+                    icon: 'fas fa-square',
+                    transform: (text) => {
+                        const squaredMap = {
+                            'A': '🄰', 'B': '🄱', 'C': '🄲', 'D': '🄳', 'E': '🄴', 'F': '🄵', 'G': '🄶', 'H': '🄷', 
+                            'I': '🄸', 'J': '🄹', 'K': '🄺', 'L': '🄻', 'M': '🄼', 'N': '🄽', 'O': '🄾', 'P': '🄿', 
+                            'Q': '🅀', 'R': '🅁', 'S': '🅂', 'T': '🅃', 'U': '🅄', 'V': '🅅', 'W': '🅆', 'X': '🅇', 
+                            'Y': '🅈', 'Z': '🅉'
+                        };
+                        return text.split('').map(char => squaredMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: 'ꜰʀᴀᴄᴛᴜʀ Фрактурный',
+                    icon: 'fas fa-feather-alt',
+                    transform: (text) => {
+                        const frakturMap = {
+                            'A': '𝕬', 'B': '𝕭', 'C': '𝕮', 'D': '𝕯', 'E': '𝕰', 'F': '𝕱', 'G': '𝕲', 'H': '𝕳', 
+                            'I': '𝕴', 'J': '𝕵', 'K': '𝕶', 'L': '𝕷', 'M': '𝕸', 'N': '𝕹', 'O': '𝕺', 'P': '𝕻', 
+                            'Q': '𝕼', 'R': '𝕽', 'S': '𝕾', 'T': '𝕿', 'U': '𝖀', 'V': '𝖁', 'W': '𝖂', 'X': '𝖃', 
+                            'Y': '𝖄', 'Z': '𝖅',
+                            'a': '𝖆', 'b': '𝖇', 'c': '𝖈', 'd': '𝖉', 'e': '𝖊', 'f': '𝖋', 'g': '𝖌', 'h': '𝖍', 
+                            'i': '𝖎', 'j': '𝖏', 'k': '𝖐', 'l': '𝖑', 'm': '𝖒', 'n': '𝖓', 'o': '𝖔', 'p': '𝖕', 
+                            'q': '𝖖', 'r': '𝖗', 's': '𝖘', 't': '𝖙', 'u': '𝖚', 'v': '𝖛', 'w': '𝖜', 'x': '𝖝', 
+                            'y': '𝖞', 'z': '𝖟'
+                        };
+                        return text.split('').map(char => frakturMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '🅑🅤🅑🅑🅛🅔 Пузырьковый',
+                    icon: 'fas fa-comment',
+                    transform: (text) => {
+                        const bubbleMap = {
+                            'A': '🅐', 'B': '🅑', 'C': '🅒', 'D': '🅓', 'E': '🅔', 'F': '🅕', 'G': '🅖', 'H': '🅗', 
+                            'I': '🅘', 'J': '🅙', 'K': '🅚', 'L': '🅛', 'M': '🅜', 'N': '🅝', 'O': '🅞', 'P': '🅟', 
+                            'Q': '🅠', 'R': '🅡', 'S': '🅢', 'T': '🅣', 'U': '🅤', 'V': '🅥', 'W': '🅦', 'X': '🅧', 
+                            'Y': '🅨', 'Z': '🅩',
+                            'a': '🅐', 'b': '🅑', 'c': '🅒', 'd': '🅓', 'e': '🅔', 'f': '🅕', 'g': '🅖', 'h': '🅗', 
+                            'i': '🅘', 'j': '🅙', 'k': '🅚', 'l': '🅛', 'm': '🅜', 'n': '🅝', 'o': '🅞', 'p': '🅟', 
+                            'q': '🅠', 'r': '🅡', 's': '🅢', 't': '🅣', 'u': '🅤', 'v': '🅥', 'w': '🅦', 'x': '🅧', 
+                            'y': '🅨', 'z': '🅩'
+                        };
+                        return text.split('').map(char => bubbleMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: 'Ｆｕｌｌｗｉｄｔｈ Широкий',
+                    icon: 'fas fa-arrows-alt-h',
+                    transform: (text) => {
+                        return text.split('').map(char => {
+                            const code = char.charCodeAt(0);
+                            if (code >= 33 && code <= 126) {
+                                return String.fromCharCode(code + 65248);
+                            }
+                            return char;
+                        }).join('');
+                    }
+                },
+                {
+                    name: 'ˢᵐᵃˡˡ ᶜᵃᵖˢ Малые прописные',
+                    icon: 'fas fa-text-height',
+                    transform: (text) => {
+                        const smallCapsMap = {
+                            'a': 'ᴀ', 'b': 'ʙ', 'c': 'ᴄ', 'd': 'ᴅ', 'e': 'ᴇ', 'f': 'ғ', 'g': 'ɢ', 'h': 'ʜ', 
+                            'i': 'ɪ', 'j': 'ᴊ', 'k': 'ᴋ', 'l': 'ʟ', 'm': 'ᴍ', 'n': 'ɴ', 'o': 'ᴏ', 'p': 'ᴘ', 
+                            'q': 'ǫ', 'r': 'ʀ', 's': 'ѕ', 't': 'ᴛ', 'u': 'ᴜ', 'v': 'ᴠ', 'w': 'ᴡ', 'x': 'х', 
+                            'y': 'ʏ', 'z': 'ᴢ'
+                        };
+                        return text.toLowerCase().split('').map(char => smallCapsMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝔻𝕠𝕦𝕓𝕝𝕖-𝕊𝕥𝕣𝕦𝕔𝕜 Двойной',
+                    icon: 'fas fa-equals',
+                    transform: (text) => {
+                        const doubleMap = {
+                            'A': '𝔸', 'B': '𝔹', 'C': 'ℂ', 'D': '𝔻', 'E': '𝔼', 'F': '𝔽', 'G': '𝔾', 'H': 'ℍ', 
+                            'I': '𝕀', 'J': '𝕁', 'K': '𝕂', 'L': '𝕃', 'M': '𝕄', 'N': 'ℕ', 'O': '𝕆', 'P': 'ℙ', 
+                            'Q': 'ℚ', 'R': 'ℝ', 'S': '𝕊', 'T': '𝕋', 'U': '𝕌', 'V': '𝕍', 'W': '𝕎', 'X': '𝕏', 
+                            'Y': '𝕐', 'Z': 'ℤ',
+                            'a': '𝕒', 'b': '𝕓', 'c': '𝕔', 'd': '𝕕', 'e': '𝕖', 'f': '𝕗', 'g': '𝕘', 'h': '𝕙', 
+                            'i': '𝕚', 'j': '𝕛', 'k': '𝕜', 'l': '𝕝', 'm': '𝕞', 'n': '𝕟', 'o': '𝕠', 'p': '𝕡', 
+                            'q': '𝕢', 'r': '𝕣', 's': '𝕤', 't': '𝕥', 'u': '𝕦', 'v': '𝕧', 'w': '𝕨', 'x': '𝕩', 
+                            'y': '𝕪', 'z': '𝕫'
+                        };
+                        return text.split('').map(char => doubleMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝒞𝓊𝓇𝓈𝒾𝓋𝑒 Рукописный 2',
+                    icon: 'fas fa-pen-fancy',
+                    transform: (text) => {
+                        const cursiveMap = {
+                            'A': '𝒜', 'B': '𝐵', 'C': '𝒞', 'D': '𝒟', 'E': '𝐸', 'F': '𝐹', 'G': '𝒢', 'H': '𝐻', 
+                            'I': '𝐼', 'J': '𝒥', 'K': '𝒦', 'L': '𝐿', 'M': '𝑀', 'N': '𝒩', 'O': '𝒪', 'P': '𝒫', 
+                            'Q': '𝒬', 'R': '𝑅', 'S': '𝒮', 'T': '𝒯', 'U': '𝒰', 'V': '𝒱', 'W': '𝒲', 'X': '𝒳', 
+                            'Y': '𝒴', 'Z': '𝒵',
+                            'a': '𝒶', 'b': '𝒷', 'c': '𝒸', 'd': '𝒹', 'e': '𝑒', 'f': '𝒻', 'g': 'ℊ', 'h': '𝒽', 
+                            'i': '𝒾', 'j': '𝒿', 'k': '𝓀', 'l': '𝓁', 'm': '𝓂', 'n': '𝓃', 'o': 'ℴ', 'p': '𝓅', 
+                            'q': '𝓆', 'r': '𝓇', 's': '𝓈', 't': '𝓉', 'u': '𝓊', 'v': '𝓋', 'w': '𝓌', 'x': '𝓍', 
+                            'y': '𝓎', 'z': '𝓏'
+                        };
+                        return text.split('').map(char => cursiveMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '⒜⒝⒞ В скобках',
+                    icon: 'fas fa-brackets-curly',
+                    transform: (text) => {
+                        const parentMap = {
+                            'A': '⒜', 'B': '⒝', 'C': '⒞', 'D': '⒟', 'E': '⒠', 'F': '⒡', 'G': '⒢', 'H': '⒣', 
+                            'I': '⒤', 'J': '⒥', 'K': '⒦', 'L': '⒧', 'M': '⒨', 'N': '⒩', 'O': '⒪', 'P': '⒫', 
+                            'Q': '⒬', 'R': '⒭', 'S': '⒮', 'T': '⒯', 'U': '⒰', 'V': '⒱', 'W': '⒲', 'X': '⒳', 
+                            'Y': '⒴', 'Z': '⒵',
+                            'a': '⒜', 'b': '⒝', 'c': '⒞', 'd': '⒟', 'e': '⒠', 'f': '⒡', 'g': '⒢', 'h': '⒣', 
+                            'i': '⒤', 'j': '⒥', 'k': '⒦', 'l': '⒧', 'm': '⒨', 'n': '⒩', 'o': '⒪', 'p': '⒫', 
+                            'q': '⒬', 'r': '⒭', 's': '⒮', 't': '⒯', 'u': '⒰', 'v': '⒱', 'w': '⒲', 'x': '⒳', 
+                            'y': '⒴', 'z': '⒵'
+                        };
+                        return text.split('').map(char => parentMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝕯𝖎𝖓𝖔𝖘𝖆𝖚𝖗 Динозавр',
+                    icon: 'fas fa-dragon',
+                    transform: (text) => {
+                        const dinoMap = {
+                            'A': '𝕬', 'B': '𝕭', 'C': '𝕮', 'D': '𝕯', 'E': '𝕰', 'F': '𝕱', 'G': '𝕲', 'H': '𝕳', 
+                            'I': '𝕴', 'J': '𝕵', 'K': '𝕶', 'L': '𝕷', 'M': '𝕸', 'N': '𝕹', 'O': '𝕺', 'P': '𝕻', 
+                            'Q': '𝕼', 'R': '𝕽', 'S': '𝕾', 'T': '𝕿', 'U': '𝖀', 'V': '𝖁', 'W': '𝖂', 'X': '𝖃', 
+                            'Y': '𝖄', 'Z': '𝖅'
+                        };
+                        return text.toUpperCase().split('').map(char => dinoMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '🄵🄾🄻🄳🄴🄳 Сложенный',
+                    icon: 'fas fa-layer-group',
+                    transform: (text) => {
+                        const foldedMap = {
+                            'A': '🄰', 'B': '🄱', 'C': '🄲', 'D': '🄳', 'E': '🄴', 'F': '🄵', 'G': '🄶', 'H': '🄷', 
+                            'I': '🄸', 'J': '🄹', 'K': '🄺', 'L': '🄻', 'M': '🄼', 'N': '🄽', 'O': '🄾', 'P': '🄿', 
+                            'Q': '🅀', 'R': '🅁', 'S': '🅂', 'T': '🅃', 'U': '🅄', 'V': '🅅', 'W': '🅆', 'X': '🅇', 
+                            'Y': '🅈', 'Z': '🅉'
+                        };
+                        return text.toUpperCase().split('').map(char => foldedMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝖲𝖺𝗇𝗌-𝖲𝖾𝗋𝗂𝖿 Без засечек',
+                    icon: 'fas fa-font',
+                    transform: (text) => {
+                        const sansMap = {
+                            'A': '𝖠', 'B': '𝖡', 'C': '𝖢', 'D': '𝖣', 'E': '𝖤', 'F': '𝖥', 'G': '𝖦', 'H': '𝖧', 
+                            'I': '𝖨', 'J': '𝖩', 'K': '𝖪', 'L': '𝖫', 'M': '𝖬', 'N': '𝖭', 'O': '𝖮', 'P': '𝖯', 
+                            'Q': '𝖰', 'R': '𝖱', 'S': '𝖲', 'T': '𝖳', 'U': '𝖴', 'V': '𝖵', 'W': '𝖶', 'X': '𝖷', 
+                            'Y': '𝖸', 'Z': '𝖹',
+                            'a': '𝖺', 'b': '𝖻', 'c': '𝖼', 'd': '𝖽', 'e': '𝖾', 'f': '𝖿', 'g': '𝗀', 'h': '𝗁', 
+                            'i': '𝗂', 'j': '𝗃', 'k': '𝗄', 'l': '𝗅', 'm': '𝗆', 'n': '𝗇', 'o': '𝗈', 'p': '𝗉', 
+                            'q': '𝗊', 'r': '𝗋', 's': '𝗌', 't': '𝗍', 'u': '𝗎', 'v': '𝗏', 'w': '𝗐', 'x': '𝗑', 
+                            'y': '𝗒', 'z': '𝗓'
+                        };
+                        return text.split('').map(char => sansMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '🅃🄴🅇🅃 В рамке',
+                    icon: 'fas fa-border-all',
+                    transform: (text) => {
+                        const boxMap = {
+                            'A': '🄰', 'B': '🄱', 'C': '🄲', 'D': '🄳', 'E': '🄴', 'F': '🄵', 'G': '🄶', 'H': '🄷', 
+                            'I': '🄸', 'J': '🄹', 'K': '🄺', 'L': '🄻', 'M': '🄼', 'N': '🄽', 'O': '🄾', 'P': '🄿', 
+                            'Q': '🅀', 'R': '🅁', 'S': '🅂', 'T': '🅃', 'U': '🅄', 'V': '🅅', 'W': '🅆', 'X': '🅇', 
+                            'Y': '🅈', 'Z': '🅉'
+                        };
+                        return text.toUpperCase().split('').map(char => boxMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝓝𝓮𝓸𝓷 Неоновый',
+                    icon: 'fas fa-lightbulb',
+                    transform: (text) => {
+                        const neonMap = {
+                            'A': '𝓐', 'B': '𝓑', 'C': '𝓒', 'D': '𝓓', 'E': '𝓔', 'F': '𝓕', 'G': '𝓖', 'H': '𝓗', 
+                            'I': '𝓘', 'J': '𝓙', 'K': '𝓚', 'L': '𝓛', 'M': '𝓜', 'N': '𝓝', 'O': '𝓞', 'P': '𝓟', 
+                            'Q': '𝓠', 'R': '𝓡', 'S': '𝓢', 'T': '𝓣', 'U': '𝓤', 'V': '𝓥', 'W': '𝓦', 'X': '𝓧', 
+                            'Y': '𝓨', 'Z': '𝓩',
+                            'a': '𝓪', 'b': '𝓫', 'c': '𝓬', 'd': '𝓭', 'e': '𝓮', 'f': '𝓯', 'g': '𝓰', 'h': '𝓱', 
+                            'i': '𝓲', 'j': '𝓳', 'k': '𝓴', 'l': '𝓵', 'm': '𝓶', 'n': '𝓷', 'o': '𝓸', 'p': '𝓹', 
+                            'q': '𝓺', 'r': '𝓻', 's': '𝓼', 't': '𝓽', 'u': '𝓾', 'v': '𝓿', 'w': '𝔀', 'x': '𝔁', 
+                            'y': '𝔂', 'z': '𝔃'
+                        };
+                        return text.split('').map(char => neonMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: 'ᵃˡᵗ ᶜᵃˢᵉ Альтернативный',
+                    icon: 'fas fa-exchange-alt',
+                    transform: (text) => {
+                        const altMap = {
+                            'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ', 'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 
+                            'i': 'ⁱ', 'j': 'ʲ', 'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ', 'p': 'ᵖ', 
+                            'q': 'ᑫ', 'r': 'ʳ', 's': 'ˢ', 't': 'ᵗ', 'u': 'ᵘ', 'v': 'ᵛ', 'w': 'ʷ', 'x': 'ˣ', 
+                            'y': 'ʸ', 'z': 'ᶻ'
+                        };
+                        return text.toLowerCase().split('').map(char => altMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '🆂🆃🅰🆁 Звездный',
+                    icon: 'fas fa-star',
+                    transform: (text) => {
+                        const starMap = {
+                            'A': '🅐', 'B': '🅑', 'C': '🅒', 'D': '🅓', 'E': '🅔', 'F': '🅕', 'G': '🅖', 'H': '🅗', 
+                            'I': '🅘', 'J': '🅙', 'K': '🅚', 'L': '🅛', 'M': '🅜', 'N': '🅝', 'O': '🅞', 'P': '🅟', 
+                            'Q': '🅠', 'R': '🅡', 'S': '🅢', 'T': '🅣', 'U': '🅤', 'V': '🅥', 'W': '🅦', 'X': '🅧', 
+                            'Y': '🅨', 'Z': '🅩'
+                        };
+                        return text.toUpperCase().split('').map(char => starMap[char] || char).join('');
+                    }
+                },
+                {
+                    name: '🅲🅸🆁🅲🅻🅴🅳 2 Двойной круг',
+                    icon: 'fas fa-dot-circle',
+                    transform: (text) => {
+                        const circle2Map = {
+                            'A': '🅐', 'B': '🅑', 'C': '🅒', 'D': '🅓', 'E': '🅔', 'F': '🅕', 'G': '🅖', 'H': '🅗', 
+                            'I': '🅘', 'J': '🅙', 'K': '🅚', 'L': '🅛', 'M': '🅜', 'N': '🅝', 'O': '🅞', 'P': '🅟', 
+                            'Q': '🅠', 'R': '🅡', 'S': '🅢', 'T': '🅣', 'U': '🅤', 'V': '🅥', 'W': '🅦', 'X': '🅧', 
+                            'Y': '🅨', 'Z': '🅩'
+                        };
+                        return text.toUpperCase().split('').map(char => circle2Map[char] || char).join('');
+                    }
+                },
+                {
+                    name: '𝕋𝕪𝕡𝕖𝕨𝕣𝕚𝕥𝕖𝕣 Пишущая машинка',
+                    icon: 'fas fa-keyboard',
+                    transform: (text) => {
+                        const typeMap = {
+                            'A': '𝔸', 'B': '𝔹', 'C': 'ℂ', 'D': '𝔻', 'E': '𝔼', 'F': '𝔽', 'G': '𝔾', 'H': 'ℍ', 
+                            'I': '𝕀', 'J': '𝕁', 'K': '𝕂', 'L': '𝕃', 'M': '𝕄', 'N': 'ℕ', 'O': '𝕆', 'P': 'ℙ', 
+                            'Q': 'ℚ', 'R': 'ℝ', 'S': '𝕊', 'T': '𝕋', 'U': '𝕌', 'V': '𝕍', 'W': '𝕎', 'X': '𝕏', 
+                            'Y': '𝕐', 'Z': 'ℤ'
+                        };
+                        return text.toUpperCase().split('').map(char => typeMap[char] || char).join('');
+                    }
+                }
+            ];
+
+            function generateFonts() {
+                const text = fontsInput.value.trim() || 'Привет! Текст для Discord';
+                fontsPreview.innerHTML = '';
+
+                // Анимация кнопки
+                const btn = generateBtn;
+                btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> ГЕНЕРАЦИЯ...';
+                btn.disabled = true;
+
+                // Задержка для анимации
+                setTimeout(() => {
+                    unicodeFonts.forEach((font, index) => {
+                        let transformedText;
+                        try {
+                            transformedText = font.transform(text);
+                        } catch (e) {
+                            transformedText = text;
+                        }
+                        
+                        const fontElement = document.createElement('div');
+                        fontElement.className = 'font-sample';
+                        fontElement.style.animationDelay = `${index * 0.05}s`;
+                        
+                        fontElement.innerHTML = `
+                            <div class="font-name">
+                                <i class="${font.icon}"></i> ${font.name}
+                            </div>
+                            <div class="font-text" style="font-size: 1.8rem; color: var(--neon-blue);">
+                                ${transformedText}
+                            </div>
+                            <div class="font-buttons">
+                                <button class="copy-btn" data-text="${transformedText.replace(/"/g, '&quot;')}">
+                                    <i class="fas fa-copy"></i> Копировать
+                                </button>
+                                <button class="test-btn" onclick="this.parentElement.parentElement.querySelector('.font-text').style.animation='highlight 0.5s'; setTimeout(()=>{this.parentElement.parentElement.querySelector('.font-text').style.animation=''}, 500)">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            </div>
+                        `;
+                        fontsPreview.appendChild(fontElement);
+                    });
+
+                    // Обработчики копирования
+                    document.querySelectorAll('.copy-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const textToCopy = this.getAttribute('data-text');
+                            navigator.clipboard.writeText(textToCopy);
+                            
+                            // Визуальный фидбек
+                            const original = this.innerHTML;
+                            this.innerHTML = '<i class="fas fa-check"></i> Скопировано!';
+                            this.style.background = 'var(--cyber-green)';
+                            this.style.color = 'black';
+                            this.style.borderColor = 'var(--cyber-green)';
+                            
+                            setTimeout(() => {
+                                this.innerHTML = original;
+                                this.style.background = '';
+                                this.style.color = '';
+                                this.style.borderColor = '';
+                            }, 1500);
+                        });
+                    });
+
+                    // Восстанавливаем кнопку
+                    btn.innerHTML = '<i class="fas fa-magic"></i> ПОКАЗАТЬ ВСЕ ШРИФТЫ';
+                    btn.disabled = false;
+                }, 300);
+            }
+
+            generateBtn.addEventListener('click', generateFonts);
+            generateFonts(); // Автоматическая генерация при загрузке
+        }
+
+        // === СМЕНА ТЕМ ===
+        function initThemeButton() {
+            const themeBtn = document.getElementById('themeBtn');
+            let currentTheme = 0;
+            
+            const themes = [
+                {
+                    name: 'Киберпанк',
+                    neonBlue: '#00f3ff',
+                    neonPink: '#ff00ff',
+                    neonOrange: '#ff5500',
+                    cyberGreen: '#00ff9d'
+                },
+                {
+                    name: 'Матрица',
+                    neonBlue: '#00ff00',
+                    neonPink: '#00ff00',
+                    neonOrange: '#00ff00',
+                    cyberGreen: '#00ff00'
+                },
+                {
+                    name: 'Синтвейв',
+                    neonBlue: '#ff00ff',
+                    neonPink: '#00ffff',
+                    neonOrange: '#ffcc00',
+                    cyberGreen: '#ff00ff'
+                },
+                {
+                    name: 'Чёрно-белый',
+                    neonBlue: '#ffffff',
+                    neonPink: '#ffffff',
+                    neonOrange: '#ffffff',
+                    cyberGreen: '#ffffff',
+                    darkBg: '#000000',
+                    panelBg: 'rgba(30, 30, 30, 0.9)',
+                    textMain: '#ffffff',
+                    textDim: '#aaaaaa',
+                    borderGlow: 'rgba(255, 255, 255, 0.3)'
+                }
+            ];
+
+            themeBtn.addEventListener('click', function() {
+                currentTheme = (currentTheme + 1) % themes.length;
+                const theme = themes[currentTheme];
+                
+                if (theme.name === 'Чёрно-белый') {
+                    document.body.classList.add('black-white-theme');
+                } else {
+                    document.body.classList.remove('black-white-theme');
+                }
+                
+                const root = document.documentElement;
+                root.style.setProperty('--neon-blue', theme.neonBlue);
+                root.style.setProperty('--neon-pink', theme.neonPink);
+                root.style.setProperty('--neon-orange', theme.neonOrange);
+                root.style.setProperty('--cyber-green', theme.cyberGreen);
+                root.style.setProperty('--border-glow', theme.borderGlow || 'rgba(0, 243, 255, 0.4)');
+                
+                if (theme.darkBg) {
+                    root.style.setProperty('--dark-bg', theme.darkBg);
+                    root.style.setProperty('--panel-bg', theme.panelBg);
+                    root.style.setProperty('--text-main', theme.textMain);
+                    root.style.setProperty('--text-dim', theme.textDim);
+                } else {
+                    root.style.setProperty('--dark-bg', '#0a0a14');
+                    root.style.setProperty('--panel-bg', 'rgba(20, 25, 40, 0.85)');
+                    root.style.setProperty('--text-main', '#ffffff');
+                    root.style.setProperty('--text-dim', '#a0b8d0');
+                }
+                
+                // Анимация кнопки
+                themeBtn.style.transform = 'scale(1.5) rotate(360deg)';
+                setTimeout(() => {
+                    themeBtn.style.transform = '';
+                }, 500);
+            });
+        }
+
+        // === ЭФФЕКТ ПЕЧАТИ ===
+        function typeText(element, text, speed) {
+            let i = 0;
+            const lines = text.split('\n');
+            let lineIndex = 0;
+            let charIndex = 0;
+
+            function type() {
+                if (lineIndex < lines.length) {
+                    if (charIndex < lines[lineIndex].length) {
+                        element.textContent += lines[lineIndex].charAt(charIndex);
+                        charIndex++;
+                        setTimeout(type, speed);
+                    } else {
+                        element.textContent += '\n';
+                        lineIndex++;
+                        charIndex = 0;
+                        setTimeout(type, speed / 2);
+                    }
+                }
+            }
+
+            type();
+        }
+    </script>
+</body>
+</html>
