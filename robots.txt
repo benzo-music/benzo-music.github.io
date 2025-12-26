@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://benzo-music.github.io/sitemap.xml
