@@ -471,29 +471,10 @@
             box-shadow: 0 10px 30px rgba(255,46,46,0.2);
         }
         
-        .btn-vk-black {
-            display: inline-block;
-            padding: 20px 50px;
-            background: #000;
-            color: white;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 16px;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            text-align: center;
-            transition: all 0.3s;
-            border: 2px solid var(--red);
-        }
-        
-        .btn-vk-black:hover {
-            background: var(--red);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(255,46,46,0.3);
-        }
-        
-        .btn-telegram-black {
-    display: inline-block;
+       .btn-vk-black {
+    display: flex; /* ВМЕСТО inline-block */
+    align-items: center; /* ДОБАВЬ ЭТО */
+    justify-content: center; /* ДОБАВЬ ЭТО */
     padding: 20px 50px;
     background: #000;
     color: white;
@@ -502,7 +483,28 @@
     font-size: 16px;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    text-align: center;
+    transition: all 0.3s;
+    border: 2px solid var(--red);
+}
+
+.btn-vk-black:hover {
+    background: var(--red);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255,46,46,0.3);
+}
+
+.btn-telegram-black {
+    display: flex; /* ВМЕСТО inline-block */
+    align-items: center; /* ДОБАВЬ ЭТО */
+    justify-content: center; /* ДОБАВЬ ЭТО */
+    padding: 20px 50px;
+    background: #000;
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
     transition: all 0.3s;
     border: 2px solid #0088cc;
     margin-top: 15px;
@@ -886,11 +888,11 @@
             <h3>Напишите мне в сообщество ВКонтакте</h3>
             <p>Обсудим ваш проект, сроки и стоимость. Работаю по предоплате 50%, остальные 50% после сдачи.</p>
             <a href="https://vk.com/im?entrypoint=community_page&media=&sel=-234690729" target="_blank" class="btn-vk-black">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/2/21/VK.com-logo.svg" alt="VK" width="20" height="20" style="margin-right: 8px; vertical-align: middle;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/21/VK.com-logo.svg" alt="VK" width="24" height="24" style="margin-right: 12px; filter: brightness(0) invert(1); opacity: 0.9;">
     Написать в сообщество ВКонтакте →
 </a>
 <a href="https://t.me/LandHub_web" target="_blank" class="btn-telegram-black">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" width="20" height="20" style="margin-right: 8px; vertical-align: middle;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" width="24" height="24" style="margin-right: 12px; filter: brightness(0) invert(1); opacity: 0.9;">
     Написать в Telegram →
 </a>
         </div>
